@@ -19,28 +19,17 @@ def info(billid):
     """
     Print an information for a bill corresponding to billId
     """
-    url = f"https://likms.assembly.go.kr/bill/billDetail.do?billId={billid}"
-    bs = BeautifulSoup(requests.get(url).text, "html5lib")
-    
-    title = ("["+str(bs.select("h3.titCont")[0]).split("<span")[0].split("[")[1]).strip()
-    level = bs.select("div.stepType01 > span.on")[0].text.strip()
-    
-    number = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(1)")[0].text.strip()
-    date = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(2)")[0].text.strip()
-    proposers = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(3)")[0].text.replace("&nbsp;", " ").strip()
-    nth = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(5)")[0].text.strip()
-    
-    print(title)
+    info = get_info(billid)
     print()
-    print("심사진행단계:", level)
-    print()									
-    print("의안번호:", number)
-    print("제안일자:", date)
-    print("제안자  :", proposers)
-    print("제안회기:", nth)
+    print(info.title)
     print()
-    content = bs.select("#summaryContentDiv")[0]
-    print("\n".join(list(map(lambda e:e.strip(), str(content).split("<br/>")))[1:]).replace("</div>","").strip())
+    print("심사진행단계:", info.level)							
+    print("의안번호:", info.number)
+    print("제안일자:", info.date)
+    print("제안자  :", info.proposers)
+    print("제안회기:", info.nth)
+    print()
+    print(info.content)
 
 @cli.command("get", short_help="Get Comments by billId")
 @click.option("--billid", help="BillId", required=True)

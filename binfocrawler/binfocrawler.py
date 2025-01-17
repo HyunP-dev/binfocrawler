@@ -59,8 +59,7 @@ def get_opinions(bill_id: str, size: int) -> Generator[Opinion, None, None]:
 
     bs = BeautifulSoup(response.text, "html5lib")
     trs = bs.select("#commentListArea > div > table > tbody > tr")
-
-    result = []
+    
     element = {}
     for i in range(0, len(trs)):
         if element == {}:
@@ -77,9 +76,8 @@ def get_opinions(bill_id: str, size: int) -> Generator[Opinion, None, None]:
                 element["title"] = element["title"][5:]
             element["content"] = trs[i].select("td > div > div")[0].text.strip().replace("\n", "").replace("\r", "")
             if set(element.keys()) == {"id", "title", "author", "group", "date", "content"}:
-                result.append(Opinion(**element))
+                yield Opinion(**element)
             element = {}
-    return result
 
 
 def get_last_index(bill_id: str) -> int:
@@ -98,3 +96,37 @@ def get_last_index(bill_id: str) -> int:
 
     bs = BeautifulSoup(response.text, "html.parser")
     return int(bs.find('input', {"type": "hidden", "name": "allCount"})["value"])
+
+
+@dataclass
+class Bill:
+    number: str
+    level: str
+    date: str
+    proposers: str
+    nth: str
+    title: str
+    content: str
+
+
+def get_info(bill_id: str) -> Bill:
+    url = f"https://likms.assembly.go.kr/bill/billDetail.do?billId={bill_id}"
+    bs = BeautifulSoup(requests.get(url).text, "html5lib")
+    
+    title = ("["+str(bs.select("h3.titCont")[0]).split("<span")[0].split("[")[1]).strip()
+    level = bs.select("div.stepType01 > span.on")[0].text.strip()
+    
+    number = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(1)")[0].text.strip()
+    date = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(2)")[0].text.strip()
+    proposers = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(3)")[0].text.replace("&nbsp;", " ").strip()
+    nth = bs.select("div.tableCol01 > table > tbody > tr > td:nth-child(5)")[0].text.strip()
+    content = bs.select("#summaryContentDiv")[0]
+    content = "\n".join(list(map(lambda e:e.strip(), str(content).split("<br/>")))[1:]).replace("</div>","").strip()
+    return Bill(
+            number=number,
+            level=level,
+            date=date,
+            proposers=proposers,
+            nth=nth,
+            title=title,
+            content=content)
